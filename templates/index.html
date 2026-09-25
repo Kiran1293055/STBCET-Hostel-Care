@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero text-center">
+<h1 class="display-5 fw-bold">Hostel Complaint & Maintenance Management</h1>
+<p class="lead">STBCET digital platform for complaints, staff assignment, work updates and verified completion photos.</p>
+<div class="d-flex justify-content-center gap-2">
+<a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Student Register</a>
+<a href="{{ url_for('login') }}" class="btn btn-dark btn-lg">Login</a>
+</div>
+</div>
+<div class="row g-4">
+<div class="col-md-4"><div class="card p-4"><h5>Student Portal</h5><p>Submit complaints, upload issue photos and track status.</p></div></div>
+<div class="col-md-4"><div class="card p-4"><h5>Admin Portal</h5><p>Approve students, assign staff and verify completed work.</p></div></div>
+<div class="col-md-4"><div class="card p-4"><h5>Maintenance Staff</h5><p>Update work progress and upload proof photos when work is completed.</p></div></div>
+</div>
+{% endblock %}

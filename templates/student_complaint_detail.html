@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3"><h2>Complaint #{{ complaint.id }}</h2><a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-dark">Back</a></div>
+<div class="row g-4">
+<div class="col-lg-7"><div class="card p-4">
+<h4>{{ complaint.title }}</h4>
+<p>{{ complaint.description }}</p>
+<p><b>Location:</b> {{ complaint.hostel_block }} / {{ complaint.room_number }}</p>
+<p><b>Category:</b> {{ complaint.category }} &nbsp; <b>Priority:</b> {{ complaint.priority }}</p>
+<p><b>Status:</b> <span class="badge text-bg-primary">{{ complaint.status }}</span></p>
+<p><b>Assigned Staff:</b> {{ complaint.staff_name or 'Not assigned' }}</p>
+<p><b>Maintenance Remarks:</b> {{ complaint.maintenance_remarks or '—' }}</p>
+{% if complaint.complaint_photo %}
+<h6>Issue Photo</h6><img class="preview" src="{{ url_for('uploaded_file', folder='complaints', filename=complaint.complaint_photo) }}">
+{% endif %}
+{% if complaint.maintenance_photo %}
+<hr><h6>Work Completion Photo</h6>
+<img class="preview" src="{{ url_for('uploaded_file', folder='maintenance', filename=complaint.maintenance_photo) }}">
+{% endif %}
+{% if complaint.status == 'Work Completed' %}
+<div class="alert alert-info mt-3">Work completed photo uploaded. Waiting for admin verification.</div>
+{% elif complaint.status == 'Closed' %}
+<div class="alert alert-success mt-3">Work verified by admin and complaint closed.</div>
+{% endif %}
+</div></div>
+<div class="col-lg-5"><div class="card p-4">
+<h5>Complaint History</h5>
+{% for h in history %}
+<div class="border-start border-3 ps-3 mb-3">
+<strong>{{ h.new_status }}</strong><br>
+<small>{{ h.remarks or '' }}</small><br>
+<small class="text-muted">{{ h.created_at }}</small>
+</div>
+{% endfor %}
+</div></div>
+</div>
+{% endblock %}

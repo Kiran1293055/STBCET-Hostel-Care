@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-8">
+<div class="card p-4">
+<h3>Submit Complaint</h3>
+<form method="post" enctype="multipart/form-data">
+<div class="row">
+<div class="col-md-6"><label class="form-label">Category</label>
+<select class="form-select mb-3" name="category" required>
+<option value="">Select</option><option>Electrical</option><option>Plumbing</option><option>Furniture</option><option>Cleanliness</option><option>Internet</option><option>Room Maintenance</option><option>Other</option>
+</select></div>
+<div class="col-md-6"><label class="form-label">Priority</label>
+<select class="form-select mb-3" name="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>
+</div>
+<input class="form-control mb-3" name="title" placeholder="Complaint title" required>
+<textarea class="form-control mb-3" name="description" rows="4" placeholder="Describe the problem" required></textarea>
+<div class="row">
+<div class="col-md-6"><input class="form-control mb-3" name="hostel_block" placeholder="Hostel block" required></div>
+<div class="col-md-6"><input class="form-control mb-3" name="room_number" placeholder="Room number" required></div>
+</div>
+<label class="form-label">Issue Photo (optional)</label>
+<input class="form-control mb-3" type="file" name="complaint_photo" accept=".jpg,.jpeg,.png,.webp">
+<button class="btn btn-primary">Submit Complaint</button>
+</form>
+</div></div></div>
+{% endblock %}

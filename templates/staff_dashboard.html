@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-4"><h2>Maintenance Staff Dashboard</h2></div>
+<div class="card p-4">
+<h4>Assigned Complaints</h4>
+<div class="table-responsive">
+<table class="table align-middle">
+<thead><tr><th>ID</th><th>Student</th><th>Complaint</th><th>Location</th><th>Status</th><th>Photo</th><th></th></tr></thead>
+<tbody>
+{% for c in complaints %}
+<tr>
+<td>#{{ c.id }}</td><td>{{ c.student_name }}</td><td>{{ c.title }}</td>
+<td>{{ c.hostel_block }} / {{ c.room_number }}</td>
+<td><span class="badge text-bg-primary">{{ c.status }}</span></td>
+<td>{% if c.maintenance_photo %}<a target="_blank" href="{{ url_for('uploaded_file', folder='maintenance', filename=c.maintenance_photo) }}">View</a>{% else %}—{% endif %}</td>
+<td><a class="btn btn-sm btn-primary" href="{{ url_for('staff_update', complaint_id=c.id) }}">Update Work</a></td>
+</tr>
+{% else %}<tr><td colspan="7" class="text-center">No assigned complaints.</td></tr>{% endfor %}
+</tbody>
+</table></div>
+</div>
+{% endblock %}

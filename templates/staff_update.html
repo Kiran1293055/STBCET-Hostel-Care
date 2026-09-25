@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7">
+<div class="card p-4">
+<h3>Update Work — Complaint #{{ complaint.id }}</h3>
+<div class="alert alert-light">
+<b>{{ complaint.title }}</b><br>
+{{ complaint.description }}<br>
+Location: {{ complaint.hostel_block }} / {{ complaint.room_number }}
+</div>
+{% if complaint.complaint_photo %}
+<p><b>Issue Photo:</b></p>
+<img class="preview mb-3" src="{{ url_for('uploaded_file', folder='complaints', filename=complaint.complaint_photo) }}">
+{% endif %}
+<form method="post" enctype="multipart/form-data">
+<label class="form-label">Work Status</label>
+<select class="form-select mb-3" name="status" id="status" required>
+<option value="In Progress" {% if complaint.status=='In Progress' %}selected{% endif %}>In Progress</option>
+<option value="Work Completed" {% if complaint.status=='Work Completed' %}selected{% endif %}>Work Completed</option>
+</select>
+<label class="form-label">Work / Resolution Remarks</label>
+<textarea class="form-control mb-3" name="maintenance_remarks" rows="4" placeholder="Describe work done...">{{ complaint.maintenance_remarks or '' }}</textarea>
+<label class="form-label">Work Completion Photo <span class="text-danger">*</span> when marking completed</label>
+<input class="form-control mb-3" type="file" name="maintenance_photo" accept=".jpg,.jpeg,.png,.webp">
+<div class="alert alert-info small">
+When you select <b>Work Completed</b>, upload a clear photo showing that the maintenance work has been completed. The complaint will then wait for admin verification.
+</div>
+<button class="btn btn-success">Save Work Update</button>
+<a href="{{ url_for('staff_dashboard') }}" class="btn btn-outline-dark">Cancel</a>
+</form>
+</div></div></div>
+{% endblock %}

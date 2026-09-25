@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h2>Student Dashboard</h2>
+<a class="btn btn-primary" href="{{ url_for('new_complaint') }}">+ New Complaint</a>
+</div>
+<div class="card p-3">
+<div class="table-responsive">
+<table class="table align-middle">
+<thead><tr><th>ID</th><th>Complaint</th><th>Location</th><th>Priority</th><th>Status</th><th>Staff</th><th></th></tr></thead>
+<tbody>
+{% for c in complaints %}
+<tr>
+<td>#{{ c.id }}</td><td>{{ c.title }}</td>
+<td>{{ c.hostel_block }} / {{ c.room_number }}</td>
+<td>{{ c.priority }}</td>
+<td><span class="badge text-bg-primary badge-status">{{ c.status }}</span></td>
+<td>{{ c.staff_name or 'Not assigned' }}</td>
+<td><a class="btn btn-sm btn-outline-dark" href="{{ url_for('student_complaint_detail', complaint_id=c.id) }}">View</a></td>
+</tr>
+{% else %}
+<tr><td colspan="7" class="text-center py-4">No complaints yet.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div></div>
+{% endblock %}
