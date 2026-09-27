@@ -3,6 +3,10 @@ import uuid
 from datetime import datetime
 from functools import wraps
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import mysql.connector
 from mysql.connector import Error
 from flask import (
@@ -112,33 +116,19 @@ def add_history(complaint_id, new_status, remarks=""):
 
 
 def ensure_user_profile_columns():
-    """Migrate older users tables to the current registration schema."""
+    """Ensure existing databases also have hostel and room fields."""
     conn = None
     cur = None
     try:
         conn = db()
         cur = conn.cursor()
-
-        def column_exists(column_name):
+        for column, definition in (("hostel_block", "VARCHAR(80) NULL"), ("room_number", "VARCHAR(30) NULL")):
             cur.execute("""
                 SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA=%s AND TABLE_NAME='users' AND COLUMN_NAME=%s
-            """, (DB_CONFIG["database"], column_name))
-            return cur.fetchone()[0] > 0
-
-        # Older project versions may have stored the student's name as `name`.
-        # The current application consistently uses `full_name`.
-        if not column_exists("full_name"):
-            if column_exists("name"):
-                cur.execute("ALTER TABLE users ADD COLUMN full_name VARCHAR(120) NULL")
-                cur.execute("UPDATE users SET full_name=name WHERE full_name IS NULL OR full_name=''")
-            else:
-                cur.execute("ALTER TABLE users ADD COLUMN full_name VARCHAR(120) NULL")
-
-        for column, definition in (("hostel_block", "VARCHAR(80) NULL"), ("room_number", "VARCHAR(30) NULL")):
-            if not column_exists(column):
+            """, (DB_CONFIG["database"], column))
+            if cur.fetchone()[0] == 0:
                 cur.execute(f"ALTER TABLE users ADD COLUMN {column} {definition}")
-
         conn.commit()
     except Error as e:
         print("User profile schema warning:", e)
@@ -338,12 +328,6 @@ def student_complaint_detail(complaint_id):
 @login_required("admin")
 def admin_dashboard():
     stats = {
-        "students_total": query(
-            "SELECT COUNT(*) AS n FROM users WHERE role='student'",
-            fetchone=True)["n"],
-        "students_approved": query(
-            "SELECT COUNT(*) AS n FROM users WHERE role='student' AND approved=1",
-            fetchone=True)["n"],
         "students_pending": query(
             "SELECT COUNT(*) AS n FROM users WHERE role='student' AND approved=0",
             fetchone=True)["n"],
@@ -356,9 +340,8 @@ def admin_dashboard():
             "SELECT COUNT(*) AS n FROM complaints WHERE status='Closed'",
             fetchone=True)["n"],
     }
-
     # Graphical-report data for the admin dashboard.
-    # These queries use the live MySQL data, so charts update automatically.
+    # These queries use live MySQL data so the charts update automatically.
     student_monthly = query(
         """SELECT DATE_FORMAT(created_at, '%b %Y') AS month_label,
                   DATE_FORMAT(created_at, '%Y-%m') AS month_key,
@@ -412,8 +395,10 @@ def admin_dashboard():
     )
     return render_template(
         "admin_dashboard.html",
-        stats=stats, complaints=complaints,
-        pending_students=pending_students, staff=staff,
+        stats=stats,
+        complaints=complaints,
+        pending_students=pending_students,
+        staff=staff,
         student_monthly=student_monthly,
         complaint_status=complaint_status,
         complaint_category=complaint_category,
@@ -574,7 +559,7 @@ def staff_update(complaint_id):
             flash("Invalid status.", "danger")
             return render_template("staff_update.html", complaint=complaint)
 
-        filename = complaint["maintenance_photo"]
+        filename = complaint.get("maintenance_photo")
         if status == "Work Completed":
             if not photo or not photo.filename:
                 flash("A work completion photo is required.", "danger")
@@ -646,4 +631,9 @@ if __name__ == "__main__":
         print("Could not connect to MySQL.")
         print("Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD and DB_NAME.")
         print(e)
-    app.run(debug=True)
+
+    app.run(
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000")),
+        debug=True
+    )
