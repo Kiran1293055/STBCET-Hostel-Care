@@ -1,6 +1,11 @@
 import os
 import uuid
-from datetime import datetime
+import hashlib
+import secrets
+import smtplib
+import ssl
+from email.message import EmailMessage
+from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -26,6 +31,14 @@ DB_CONFIG = {
     "password": os.getenv("DB_PASSWORD", ""),
     "database": os.getenv("DB_NAME", "stbcet_hostel"),
 }
+
+# Password-reset email configuration. Keep these values in .env / Railway Variables.
+MAIL_HOST = os.getenv("MAIL_HOST", "smtp.gmail.com")
+MAIL_PORT = int(os.getenv("MAIL_PORT", "465"))
+MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+MAIL_FROM = os.getenv("MAIL_FROM", MAIL_USERNAME)
+RESET_TOKEN_MINUTES = int(os.getenv("RESET_TOKEN_MINUTES", "30"))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_ROOT = os.path.join(BASE_DIR, "static", "uploads")
@@ -67,6 +80,48 @@ def execute(sql, params=()):
     finally:
         cur.close()
         conn.close()
+
+
+def create_password_reset_token(user_id):
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    expires_at = datetime.utcnow() + timedelta(minutes=RESET_TOKEN_MINUTES)
+
+    # Invalidate previous active tokens for this user.
+    execute(
+        "UPDATE password_reset_tokens SET used=1 WHERE user_id=%s AND used=0",
+        (user_id,)
+    )
+    execute(
+        """INSERT INTO password_reset_tokens
+           (user_id, token_hash, expires_at, used)
+           VALUES (%s,%s,%s,0)""",
+        (user_id, token_hash, expires_at)
+    )
+    return token
+
+
+def send_password_reset_email(recipient, reset_url):
+    if not MAIL_USERNAME or not MAIL_PASSWORD or not MAIL_FROM:
+        raise RuntimeError("MAIL_USERNAME, MAIL_PASSWORD and MAIL_FROM must be configured.")
+
+    message = EmailMessage()
+    message["Subject"] = "STBCET HostelCare - Password Reset"
+    message["From"] = MAIL_FROM
+    message["To"] = recipient
+    message.set_content(
+        """Hello,\n\n"""
+        "We received a request to reset your STBCET HostelCare password.\n\n"
+        f"Reset your password using this link (valid for {RESET_TOKEN_MINUTES} minutes):\n"
+        f"{reset_url}\n\n"
+        "If you did not request this, you can ignore this email.\n\n"
+        "STBCET HostelCare"
+    )
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context, timeout=20) as server:
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.send_message(message)
 
 
 def allowed_file(filename):
@@ -222,6 +277,80 @@ def login():
         return redirect(url_for("dashboard"))
 
     return render_template("login.html")
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        # Always show the same message so account existence is not disclosed.
+        generic_message = "If an account with that email exists, a password reset link has been sent."
+
+        if email:
+            user = query(
+                "SELECT id, email FROM users WHERE email=%s LIMIT 1",
+                (email,), fetchone=True
+            )
+            if user:
+                try:
+                    token = create_password_reset_token(user["id"])
+                    reset_url = url_for("reset_password", token=token, _external=True)
+                    send_password_reset_email(user["email"], reset_url)
+                except Exception as e:
+                    # Do not expose SMTP/database details to the user.
+                    print("Password reset email error:", e)
+
+        flash(generic_message, "success")
+        return redirect(url_for("forgot_password"))
+
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    reset_record = query(
+        """SELECT id, user_id, expires_at, used
+           FROM password_reset_tokens
+           WHERE token_hash=%s LIMIT 1""",
+        (token_hash,), fetchone=True
+    )
+
+    if (not reset_record or reset_record["used"] or
+            reset_record["expires_at"] < datetime.utcnow()):
+        flash("This password reset link is invalid or has expired.", "danger")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.", "danger")
+            return render_template("reset_password.html", token=token)
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return render_template("reset_password.html", token=token)
+
+        execute(
+            "UPDATE users SET password_hash=%s WHERE id=%s",
+            (generate_password_hash(password), reset_record["user_id"])
+        )
+        execute(
+            "UPDATE password_reset_tokens SET used=1 WHERE id=%s",
+            (reset_record["id"],)
+        )
+        execute(
+            "DELETE FROM password_reset_tokens WHERE user_id=%s AND id<>%s",
+            (reset_record["user_id"], reset_record["id"])
+        )
+
+        flash("Your password has been reset successfully. Please log in.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html", token=token)
 
 
 @app.route("/logout")

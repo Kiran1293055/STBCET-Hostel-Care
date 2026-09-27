@@ -1,16 +1,25 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="row justify-content-center"><div class="col-md-5">
-<div class="card p-4">
-<h3 class="mb-3">Login</h3>
-<form method="post">
-<label class="form-label">Email</label>
-<input class="form-control mb-3" type="email" name="email" required>
-<label class="form-label">Password</label>
-<input class="form-control mb-3" type="password" name="password" required>
-<button class="btn btn-primary w-100">Login</button>
-</form>
-<hr>
-<p class="small mb-0">Default admin: admin@stbcet.edu.in / Admin@STBCET2026</p>
-</div></div></div>
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card p-4">
+      <h2 class="mb-4">Login</h2>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input class="form-control" type="email" name="email" required autocomplete="email">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input class="form-control" type="password" name="password" required autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary w-100" type="submit">Login</button>
+      </form>
+      <div class="text-center mt-3">
+        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
