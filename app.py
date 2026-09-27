@@ -327,52 +327,82 @@ def student_complaint_detail(complaint_id):
 @app.route("/admin")
 @login_required("admin")
 def admin_dashboard():
+    # Summary cards
+    # Keep these as separate variables as well as inside the stats dictionary.
+    # This makes the values explicit and avoids template-key mismatches.
+    students_total = query(
+        "SELECT COUNT(*) AS n FROM users WHERE role='student'",
+        fetchone=True
+    )["n"] or 0
+
+    students_approved = query(
+        "SELECT COUNT(*) AS n FROM users WHERE role='student' AND approved=1",
+        fetchone=True
+    )["n"] or 0
+
+    students_pending = query(
+        "SELECT COUNT(*) AS n FROM users WHERE role='student' AND approved=0",
+        fetchone=True
+    )["n"] or 0
+
+    complaints_total = query(
+        "SELECT COUNT(*) AS n FROM complaints",
+        fetchone=True
+    )["n"] or 0
+
+    work_completed = query(
+        "SELECT COUNT(*) AS n FROM complaints WHERE status='Work Completed'",
+        fetchone=True
+    )["n"] or 0
+
+    closed_complaints = query(
+        "SELECT COUNT(*) AS n FROM complaints WHERE status='Closed'",
+        fetchone=True
+    )["n"] or 0
+
     stats = {
-        "students_pending": query(
-            "SELECT COUNT(*) AS n FROM users WHERE role='student' AND approved=0",
-            fetchone=True)["n"],
-        "complaints": query(
-            "SELECT COUNT(*) AS n FROM complaints", fetchone=True)["n"],
-        "work_completed": query(
-            "SELECT COUNT(*) AS n FROM complaints WHERE status='Work Completed'",
-            fetchone=True)["n"],
-        "closed": query(
-            "SELECT COUNT(*) AS n FROM complaints WHERE status='Closed'",
-            fetchone=True)["n"],
+        "students_total": students_total,
+        "students_approved": students_approved,
+        "students_pending": students_pending,
+        "complaints": complaints_total,
+        "work_completed": work_completed,
+        "closed": closed_complaints,
     }
-    # Graphical-report data for the admin dashboard.
-    # These queries use live MySQL data so the charts update automatically.
+
+    # Chart data
     student_monthly = query(
-        """SELECT DATE_FORMAT(created_at, '%b %Y') AS month_label,
-                  DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+        """SELECT DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+                  DATE_FORMAT(created_at, '%b %Y') AS month_label,
                   COUNT(*) AS total
            FROM users
            WHERE role='student'
-           GROUP BY month_key, month_label
-           ORDER BY month_key"""
+           GROUP BY DATE_FORMAT(created_at, '%Y-%m'),
+                    DATE_FORMAT(created_at, '%b %Y')
+           ORDER BY month_key ASC"""
     )
 
     complaint_status = query(
         """SELECT status, COUNT(*) AS total
            FROM complaints
            GROUP BY status
-           ORDER BY total DESC, status"""
+           ORDER BY total DESC"""
     )
 
     complaint_category = query(
         """SELECT category, COUNT(*) AS total
            FROM complaints
            GROUP BY category
-           ORDER BY total DESC, category"""
+           ORDER BY total DESC"""
     )
 
     complaints_monthly = query(
-        """SELECT DATE_FORMAT(created_at, '%b %Y') AS month_label,
-                  DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+        """SELECT DATE_FORMAT(created_at, '%Y-%m') AS month_key,
+                  DATE_FORMAT(created_at, '%b %Y') AS month_label,
                   COUNT(*) AS total
            FROM complaints
-           GROUP BY month_key, month_label
-           ORDER BY month_key"""
+           GROUP BY DATE_FORMAT(created_at, '%Y-%m'),
+                    DATE_FORMAT(created_at, '%b %Y')
+           ORDER BY month_key ASC"""
     )
 
     complaints = query(
@@ -383,19 +413,30 @@ def admin_dashboard():
            LEFT JOIN users ms ON c.assigned_staff_id=ms.id
            ORDER BY c.created_at DESC"""
     )
+
     pending_students = query(
-        """SELECT id,full_name,email,phone,created_at
-           FROM users WHERE role='student' AND approved=0
+        """SELECT id, full_name, email, phone, created_at
+           FROM users
+           WHERE role='student' AND approved=0
            ORDER BY created_at DESC"""
     )
+
     staff = query(
-        """SELECT id,full_name,email,phone
-           FROM users WHERE role='staff'
+        """SELECT id, full_name, email, phone
+           FROM users
+           WHERE role='staff'
            ORDER BY full_name"""
     )
+
     return render_template(
         "admin_dashboard.html",
         stats=stats,
+        # Explicit scalar values for the dashboard cards.
+        students_total=students_total,
+        students_approved=students_approved,
+        students_pending=students_pending,
+        complaints_total=complaints_total,
+        closed_complaints=closed_complaints,
         complaints=complaints,
         pending_students=pending_students,
         staff=staff,
@@ -631,9 +672,4 @@ if __name__ == "__main__":
         print("Could not connect to MySQL.")
         print("Check DB_HOST, DB_PORT, DB_USER, DB_PASSWORD and DB_NAME.")
         print(e)
-
-    app.run(
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", "5000")),
-        debug=True
-    )
+    app.run(debug=True)

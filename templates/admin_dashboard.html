@@ -1,122 +1,271 @@
 {% extends "base.html" %}
+
 {% block content %}
+
 <h2 class="mb-4">Admin Dashboard</h2>
 
+<!-- Dashboard statistics -->
 <div class="row g-3 mb-4">
-<div class="col-md-3"><div class="card p-3"><small>Total Registered Students</small><h2>{{ stats.students_total }}</h2></div></div>
-<div class="col-md-3"><div class="card p-3"><small>Approved Students</small><h2>{{ stats.students_approved }}</h2></div></div>
-<div class="col-md-3"><div class="card p-3"><small>Total Complaints</small><h2>{{ stats.complaints }}</h2></div></div>
-<div class="col-md-3"><div class="card p-3"><small>Closed Complaints</small><h2>{{ stats.closed }}</h2></div></div>
+    <div class="col-md-3">
+        <div class="card p-3">
+            <small>Total Registered Students</small>
+            <h2>{{ students_total }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <small>Approved Students</small>
+            <h2>{{ students_approved }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <small>Total Complaints</small>
+            <h2>{{ complaints_total }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <small>Closed Complaints</small>
+            <h2>{{ closed_complaints }}</h2>
+        </div>
+    </div>
 </div>
 
+<!-- Student registrations + complaint status -->
 <div class="row g-3 mb-4">
-<div class="col-md-6">
-<div class="card p-4 h-100">
-<h4 class="mb-3">Student Registrations</h4>
-<p class="text-muted small">Number of students registered each month.</p>
-<div style="height:300px"><canvas id="studentRegistrationChart"></canvas></div>
-</div>
-</div>
-<div class="col-md-6">
-<div class="card p-4 h-100">
-<h4 class="mb-3">Complaint Status</h4>
-<p class="text-muted small">Current complaint distribution by status.</p>
-<div style="height:300px"><canvas id="complaintStatusChart"></canvas></div>
-</div>
-</div>
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <h4 class="mb-3">Student Registrations</h4>
+            <p class="text-muted small">Number of students registered each month.</p>
+            <div style="height:300px">
+                <canvas id="studentRegistrationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <h4 class="mb-3">Complaint Status</h4>
+            <p class="text-muted small">Current complaint distribution by status.</p>
+            <div style="height:300px">
+                <canvas id="complaintStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Complaint category + monthly trend -->
 <div class="row g-3 mb-4">
-<div class="col-md-7">
-<div class="card p-4 h-100">
-<h4 class="mb-3">Complaints by Category</h4>
-<p class="text-muted small">Number of complaints received in each category.</p>
-<div style="height:320px"><canvas id="complaintCategoryChart"></canvas></div>
-</div>
-</div>
-<div class="col-md-5">
-<div class="card p-4 h-100">
-<h4 class="mb-3">Complaints Over Time</h4>
-<p class="text-muted small">Monthly complaint registration trend.</p>
-<div style="height:320px"><canvas id="complaintMonthlyChart"></canvas></div>
-</div>
-</div>
+    <div class="col-md-7">
+        <div class="card p-4 h-100">
+            <h4 class="mb-3">Complaints by Category</h4>
+            <p class="text-muted small">Number of complaints received in each category.</p>
+            <div style="height:320px">
+                <canvas id="complaintCategoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card p-4 h-100">
+            <h4 class="mb-3">Complaints Over Time</h4>
+            <p class="text-muted small">Monthly complaint registration trend.</p>
+            <div style="height:320px">
+                <canvas id="complaintMonthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Pending student approvals -->
 <div class="card p-4 mb-4">
-<h4>Pending Student Approvals</h4>
-<div class="table-responsive"><table class="table">
-<tr><th>Name</th><th>Email</th><th>Phone</th><th>Action</th></tr>
-{% for s in pending_students %}
-<tr><td>{{ s.full_name }}</td><td>{{ s.email }}</td><td>{{ s.phone or '—' }}</td><td>
-<form class="d-inline" method="post" action="{{ url_for('approve_student', user_id=s.id) }}"><button class="btn btn-sm btn-success">Approve</button></form>
-<form class="d-inline" method="post" action="{{ url_for('reject_student', user_id=s.id) }}"><button class="btn btn-sm btn-danger">Reject</button></form>
-</td></tr>
-{% else %}<tr><td colspan="4">No pending registrations.</td></tr>{% endfor %}
-</table></div>
+    <h4>Pending Student Approvals</h4>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in pending_students %}
+                <tr>
+                    <td>{{ s.full_name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.phone or '—' }}</td>
+                    <td>
+                        <form class="d-inline" method="post" action="{{ url_for('approve_student', user_id=s.id) }}">
+                            <button class="btn btn-sm btn-success">Approve</button>
+                        </form>
+
+                        <form class="d-inline" method="post" action="{{ url_for('reject_student', user_id=s.id) }}">
+                            <button class="btn btn-sm btn-danger">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">No pending registrations.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
+<!-- Add maintenance staff -->
 <div class="card p-4 mb-4">
-<h4>Add Maintenance Staff</h4>
-<form class="row g-2" method="post" action="{{ url_for('add_staff') }}">
-<div class="col-md-3"><input class="form-control" name="full_name" placeholder="Full name" required></div>
-<div class="col-md-3"><input class="form-control" type="email" name="email" placeholder="Email" required></div>
-<div class="col-md-2"><input class="form-control" name="phone" placeholder="Phone"></div>
-<div class="col-md-2"><input class="form-control" type="password" name="password" placeholder="Password" required></div>
-<div class="col-md-2"><button class="btn btn-dark w-100">Create Staff</button></div>
-</form>
+    <h4>Add Maintenance Staff</h4>
+
+    <form class="row g-2" method="post" action="{{ url_for('add_staff') }}">
+        <div class="col-md-3">
+            <input class="form-control" name="full_name" placeholder="Full name" required>
+        </div>
+
+        <div class="col-md-3">
+            <input class="form-control" type="email" name="email" placeholder="Email" required>
+        </div>
+
+        <div class="col-md-2">
+            <input class="form-control" name="phone" placeholder="Phone">
+        </div>
+
+        <div class="col-md-2">
+            <input class="form-control" type="password" name="password" placeholder="Password" required>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-dark w-100">Create Staff</button>
+        </div>
+    </form>
 </div>
 
+<!-- Complaint management -->
 <div class="card p-4">
-<h4>Complaint Management</h4>
-<div class="table-responsive"><table class="table align-middle">
-<thead><tr><th>ID</th><th>Student</th><th>Complaint</th><th>Status</th><th>Assign</th><th>Proof</th><th>Action</th></tr></thead>
-<tbody>
-{% for c in complaints %}
-<tr>
-<td>#{{ c.id }}</td><td>{{ c.student_name }}</td><td>{{ c.title }}</td>
-<td><span class="badge text-bg-primary">{{ c.status }}</span></td>
-<td>
-<form method="post" action="{{ url_for('assign_complaint', complaint_id=c.id) }}" class="d-flex gap-1">
-<select class="form-select form-select-sm" name="staff_id" required>
-<option value="">Staff</option>
-{% for s in staff %}<option value="{{ s.id }}" {% if c.assigned_staff_id==s.id %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}
-</select>
-<button class="btn btn-sm btn-primary">Assign</button>
-</form>
-</td>
-<td>
-{% if c.maintenance_photo %}
-<a target="_blank" href="{{ url_for('uploaded_file', folder='maintenance', filename=c.maintenance_photo) }}">View Photo</a>
-{% else %}—{% endif %}
-</td>
-<td>
-{% if c.status == 'Work Completed' and c.verification_status == 'Pending' %}
-<form class="mb-1" method="post" action="{{ url_for('verify_complaint', complaint_id=c.id) }}">
-<button class="btn btn-sm btn-success">Verify & Close</button>
-</form>
-<form method="post" action="{{ url_for('request_rework', complaint_id=c.id) }}">
-<input class="form-control form-control-sm mb-1" name="remarks" placeholder="Rework reason" required>
-<button class="btn btn-sm btn-warning">Send Rework</button>
-</form>
-{% elif c.status == 'Closed' %}
-<span class="text-success">Verified</span>
-{% else %}
-<span class="text-muted">Waiting</span>
-{% endif %}
-</td>
-</tr>
-{% endfor %}
-</tbody></table></div>
+    <h4>Complaint Management</h4>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student</th>
+                    <th>Complaint</th>
+                    <th>Status</th>
+                    <th>Assign</th>
+                    <th>Proof</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for c in complaints %}
+                <tr>
+                    <td>#{{ c.id }}</td>
+                    <td>{{ c.student_name }}</td>
+                    <td>{{ c.title }}</td>
+
+                    <td>
+                        {% if c.status == 'Closed' %}
+                            <span class="badge text-bg-success">{{ c.status }}</span>
+                        {% elif c.status == 'Work Completed' %}
+                            <span class="badge text-bg-warning">{{ c.status }}</span>
+                        {% elif c.status == 'In Progress' %}
+                            <span class="badge text-bg-info">{{ c.status }}</span>
+                        {% elif c.status == 'Assigned' %}
+                            <span class="badge text-bg-primary">{{ c.status }}</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">{{ c.status }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <form method="post" action="{{ url_for('assign_complaint', complaint_id=c.id) }}" class="d-flex gap-1">
+                            <select class="form-select form-select-sm" name="staff_id" required>
+                                <option value="">Staff</option>
+                                {% for s in staff %}
+                                <option value="{{ s.id }}" {% if c.assigned_staff_id == s.id %}selected{% endif %}>
+                                    {{ s.full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-primary">Assign</button>
+                        </form>
+                    </td>
+
+                    <td>
+                        {% if c.maintenance_photo %}
+                            <a target="_blank" href="{{ url_for('uploaded_file', folder='maintenance', filename=c.maintenance_photo) }}">
+                                View Photo
+                            </a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if c.status == 'Work Completed' and c.verification_status == 'Pending' %}
+                            <form class="mb-1" method="post" action="{{ url_for('verify_complaint', complaint_id=c.id) }}">
+                                <button class="btn btn-sm btn-success">Verify &amp; Close</button>
+                            </form>
+
+                            <form method="post" action="{{ url_for('request_rework', complaint_id=c.id) }}">
+                                <input class="form-control form-control-sm mb-1" name="remarks" placeholder="Rework reason" required>
+                                <button class="btn btn-sm btn-warning">Send Rework</button>
+                            </form>
+                        {% elif c.status == 'Closed' %}
+                            <span class="text-success">Verified</span>
+                        {% else %}
+                            <span class="text-muted">Waiting</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No complaints found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const studentMonthly = {{ student_monthly|tojson }};
-const complaintStatus = {{ complaint_status|tojson }};
-const complaintCategory = {{ complaint_category|tojson }};
-const complaintsMonthly = {{ complaints_monthly|tojson }};
 
+<!-- Keep server data in JSON blocks so VS Code does not treat Jinja as JavaScript. -->
+<script type="application/json" id="studentMonthlyData">{{ student_monthly | tojson }}</script>
+<script type="application/json" id="complaintStatusData">{{ complaint_status | tojson }}</script>
+<script type="application/json" id="complaintCategoryData">{{ complaint_category | tojson }}</script>
+<script type="application/json" id="complaintsMonthlyData">{{ complaints_monthly | tojson }}</script>
+
+<script>
+const studentMonthly = JSON.parse(
+    document.getElementById('studentMonthlyData').textContent
+);
+
+const complaintStatus = JSON.parse(
+    document.getElementById('complaintStatusData').textContent
+);
+
+const complaintCategory = JSON.parse(
+    document.getElementById('complaintCategoryData').textContent
+);
+
+const complaintsMonthly = JSON.parse(
+    document.getElementById('complaintsMonthlyData').textContent
+);
+
+// Student registrations
 new Chart(document.getElementById('studentRegistrationChart'), {
     type: 'bar',
     data: {
@@ -130,10 +279,16 @@ new Chart(document.getElementById('studentRegistrationChart'), {
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+            }
+        }
     }
 });
 
+// Complaint status
 new Chart(document.getElementById('complaintStatusChart'), {
     type: 'doughnut',
     data: {
@@ -149,6 +304,7 @@ new Chart(document.getElementById('complaintStatusChart'), {
     }
 });
 
+// Complaint category
 new Chart(document.getElementById('complaintCategoryChart'), {
     type: 'bar',
     data: {
@@ -163,10 +319,16 @@ new Chart(document.getElementById('complaintCategoryChart'), {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+        scales: {
+            x: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+            }
+        }
     }
 });
 
+// Monthly complaint trend
 new Chart(document.getElementById('complaintMonthlyChart'), {
     type: 'line',
     data: {
@@ -181,8 +343,14 @@ new Chart(document.getElementById('complaintMonthlyChart'), {
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+            }
+        }
     }
 });
 </script>
+
 {% endblock %}
